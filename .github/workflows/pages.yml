@@ -1,0 +1,42 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # enablement: true → 仓库没开 Pages 时用工作流 token 自动开启
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      # 只发布运行所需文件（index.html 自包含样式与脚本，另带备份与底图）
+      - name: Prepare site
+        run: |
+          mkdir -p _site
+          cp -R index.html wow_infinite_map_helper.html css js assets _site/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
